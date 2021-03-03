@@ -4,7 +4,6 @@ import xlrd
 import sys, os
 import time
 from gtts import gTTS
-from io import BytesIO
 from pydub import AudioSegment
 from pydub.playback import play
 import io
@@ -22,11 +21,11 @@ def createFile(english, czech, file):
         czech.write_to_fp(fp)
 
 def say(english, czech):
-    fp_english = BytesIO()
+    fp_english = io.BytesIO()
     english.write_to_fp(fp_english)
     playMp3(fp_english)
     time.sleep(0.5)
-    fp_czech = BytesIO()
+    fp_czech = io.BytesIO()
     czech.write_to_fp(fp_czech)
     playMp3(fp_czech)
 
