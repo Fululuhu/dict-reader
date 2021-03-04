@@ -9,47 +9,53 @@ from pydub.playback import play
 import io
 
 
-def translate(english, czech):
-    sound_english = gTTS(text=english, lang='en')
-    sound_czech = gTTS(text=czech, lang='cs') # slow=False
-    return sound_english, sound_czech
+class Word(object):
+    def __init__(self, word1, word2, lang1='en', lang2='cs'):
+        self.word1 = word1
+        self.word2 = word2
+        self.lang1 = lang1
+        self.lang2 = lang2
 
-def createFile(english, czech, file):
-    with open(file, 'wb') as fp:
-        english.write_to_fp(fp)
-    with open(file, 'ab') as fp:
-        czech.write_to_fp(fp)
+    def __str__(self):
+        return '{0} - {1}'.format(self.word1, self.word2)
 
-def say(english, czech):
-    fp_english = io.BytesIO()
-    english.write_to_fp(fp_english)
-    playMp3(fp_english)
-    time.sleep(0.5)
-    fp_czech = io.BytesIO()
-    czech.write_to_fp(fp_czech)
-    playMp3(fp_czech)
+    def sendToGTTS(self):
+        gtts1 = gTTS(text=self.word1, lang=self.lang1)
+        gtts2 = gTTS(text=self.word2, lang=self.lang2) # slow=False
+        return gtts1, gtts2
 
-    time.sleep(1)
+    def vocalize(self):
+        gtts1, gtts2 = self.sendToGTTS()
+        b1 = io.BytesIO()
+        b2 = io.BytesIO()
 
-def playMp3(sound):
-    
-    song = AudioSegment.from_file(io.BytesIO(sound.getvalue()), format="mp3")
-    play(song)
+        gtts1.write_to_fp(b1)
+        gtts2.write_to_fp(b2)
+
+        self.sound1 = AudioSegment.from_file(io.BytesIO(b1.getvalue()), format="mp3")
+        self.sound2 = AudioSegment.from_file(io.BytesIO(b2.getvalue()), format="mp3")
+
+    def play(self):
+        play(self.sound1)
+        play(self.sound2)
+
+    def createFile(self):
+        file = pwd + str(self) + '.mp3'
+        gtts1, gtts2 = self.sendToGTTS()
+        with open(file, 'wb') as fp:
+            gtts1.write_to_fp(fp)
+        with open(file, 'ab') as fp:
+            gtts2.write_to_fp(fp)
 
 ###############
-
 pwd = os.getcwd() + '/'
 xlloc = pwd + (r'tat_wordlist.xls')
 xlbook = xlrd.open_workbook(xlloc)
 xlsheet = xlbook.sheet_by_index(0)
-wordlist = {str(xlsheet.cell_value(i, 0)):str(xlsheet.cell_value(i, 1)) for i in range(1,xlsheet.nrows)}
 
-for word_english in wordlist.keys():
-    word_czech = wordlist[word_english]
-    file = pwd + '{0} - {1}.mp3'.format(word_english, word_czech)
-    english, czech = translate(word_english, word_czech)
-    print('{0} - {1}'.format(word_english, word_czech))
-    
+wordlist = [Word(str(xlsheet.cell_value(i, 0)), str(xlsheet.cell_value(i, 1))) for i in range(1,xlsheet.nrows)]
 
-    createFile(english, czech, file)
-    say(english, czech)
+for word in wordlist:
+    word.vocalize()
+    word.createFile()
+    word.play()
